@@ -1,7 +1,7 @@
-# Thông tin deploy — CP5
+# Thông tin deploy — Checkpoint 5
 
-> Cập nhật các mục trạng thái, URL và kết quả sau khi deploy thật. Không ghi
-> giá trị API key, password, token hoặc credential vào file này.
+> Cập nhật trạng thái, URL và kết quả sau deployment thật. Không ghi giá trị
+> API key, password, token hoặc credential vào file này.
 
 ## Thông tin học viên
 
@@ -11,50 +11,52 @@
 | Mã học viên | 2A202602716 |
 | Repository | https://github.com/duanhap/K4-L3B-DAY12-NguyenCongDuan-2A202602716-CloudServicesAndDeployment |
 
-## Service Railway
+## Service Render
 
 | Mục | Trạng thái |
 |---|---|
-| Public URL | Chưa deploy — cập nhật sau khi Railway tạo domain |
-| Platform | Railway (đã chọn; deployment chưa xác minh) |
+| Public URL | Chưa deploy — lấy URL onrender.com sau khi Blueprint tạo web service |
+| Platform | Render Blueprint (đã chọn; deployment chưa xác minh) |
 | Ngày deploy | Chưa deploy |
 
-## Biến môi trường trên Railway
+## Biến môi trường
 
-Ghi trạng thái và nguồn của biến sau khi cấu hình. Chỉ ghi tên biến và nguồn,
-không ghi giá trị bí mật.
+Chỉ ghi tên biến và nguồn/trạng thái; không ghi giá trị secret.
 
 | Biến | Trạng thái | Nguồn/ghi chú |
 |---|---|---|
-| `PORT` | Chờ deploy | Railway tự cấp; không tự đặt giá trị cố định |
-| `AGENT_API_KEY` | Chưa cấu hình/xác minh | Tạo giá trị riêng và lưu trong Railway Variables |
-| `REDIS_URL` | Chưa cấu hình/xác minh | Tham chiếu biến kết nối của Redis service Railway |
-| `RATE_LIMIT_PER_MINUTE` | Chưa cấu hình/xác minh | Khuyến nghị giá trị lab: 10 |
-| `MONTHLY_BUDGET_USD` | Chưa cấu hình/xác minh | Khuyến nghị giá trị lab: 10.0 |
-| `LOG_LEVEL` | Chưa cấu hình/xác minh | Khuyến nghị: INFO |
+| `PORT` | Chờ deploy | Render cấp runtime port; ứng dụng đọc biến này |
+| `AGENT_API_KEY` | Chưa cấu hình/xác minh | Nhập trực tiếp vào Render khi Blueprint yêu cầu; không lưu trong Git |
+| `REDIS_URL` | Chờ tạo service | Blueprint tham chiếu connection string của Render Key Value `day12-redis` |
+| `RATE_LIMIT_PER_MINUTE` | Blueprint đặt mặc định | 10 |
+| `MONTHLY_BUDGET_USD` | Blueprint đặt mặc định | 10.0 |
+| `LOG_LEVEL` | Blueprint đặt mặc định | INFO |
 
 ## Các bước triển khai
 
-1. Push nhánh chứa code CP1–CP5 lên repository GitHub ở trên.
-2. Tạo project Railway và thêm service từ repository; Railway sẽ phát hiện Dockerfile ở thư mục gốc.
-3. Thêm Redis service riêng trong cùng project. Railway không chạy trực tiếp toàn bộ `docker-compose.yml`; cấu hình Redis local trong Compose không tự tạo database trên Railway.
-4. Trong Variables của service agent, cấu hình `AGENT_API_KEY`, `REDIS_URL`, `RATE_LIMIT_PER_MINUTE`, `MONTHLY_BUDGET_USD`, `LOG_LEVEL`. Dùng reference tới URL Redis của service; để Railway tự cấp `PORT`.
-5. Đợi deployment build và chạy thành công. Kiểm tra build/runtime logs; trong Settings → Networking, tạo public domain.
-6. Ghi domain thật vào bảng Service, cập nhật trạng thái biến, lưu ảnh dashboard và health vào `screenshots/`.
+1. Push code CP1–CP5 cùng `render.yaml` lên nhánh GitHub cần deploy.
+2. Trong Render Dashboard, chọn **New → Blueprint** và kết nối repository trên.
+3. Kiểm tra Blueprint nhận diện web service `day12-agent` và Key Value `day12-redis`; chọn Free plan nếu tài khoản cho phép.
+4. Khi được hỏi giá trị `AGENT_API_KEY`, tạo/dán khóa riêng trong Render Dashboard. Không ghi khóa vào repository.
+5. Apply Blueprint và theo dõi build/deploy logs. Blueprint sẽ cấp `REDIS_URL` cho web service từ Key Value; Render tự cấp `PORT` lúc runtime.
+6. Chờ health check `/ready` thành công. Mở web service để lấy public `onrender.com` URL, rồi cập nhật bảng Service ở trên.
+7. Lưu ảnh dashboard và kết quả health vào `screenshots/`.
 
-`railway.toml` dùng Dockerfile ở repo root, chạy Uvicorn trên `$PORT` và đặt healthcheck path `/health`.
+`render.yaml` build web service từ `Dockerfile`, đọc `PORT`, lấy `REDIS_URL` từ Key Value và dùng `/health` làm platform health check. Sau deploy, gọi riêng `/ready` để xác minh Redis.
+
+Với Free plan, web service có thể ngủ sau 15 phút không có traffic và mất khoảng một phút để thức lại. Render Key Value Free lưu dữ liệu trong bộ nhớ; nếu instance Redis restart thì history, rate-limit và cost counters có thể bị xóa. Phù hợp cho lab/demo; không xem đó là lưu trữ bền vững.
 
 ## Kiểm tra sau deploy
 
-Trong PowerShell, nhập public URL thật khi được nhắc; dùng API key lưu trong biến môi trường cục bộ `DEPLOY_API_KEY` (không commit biến này).
+Trong PowerShell, nhập URL public thật khi được nhắc. Để kiểm tra request có key, đặt giá trị `AGENT_API_KEY` của Render vào biến môi trường cục bộ `DEPLOY_API_KEY`; không commit biến này.
 
 ```powershell
-$baseUrl = (Read-Host "Nhập public URL Railway").TrimEnd('/')
+$baseUrl = (Read-Host "Nhập public URL của Render").TrimEnd('/')
 
-# Liveness: mong đợi 200 và status=ok
+# Liveness: mong đợi 200, status=ok
 Invoke-RestMethod "$baseUrl/health"
 
-# Readiness/Redis: mong đợi 200 và status=ready
+# Readiness/Redis: mong đợi 200, status=ready
 Invoke-RestMethod "$baseUrl/ready"
 
 # Không có API key: mong đợi 401
@@ -68,15 +70,15 @@ Invoke-RestMethod -Uri "$baseUrl/ask" -Method Post `
   -ContentType "application/json" -Headers $headers -Body $body
 ```
 
-Kiểm tra rate limit bằng cách gửi nhiều request có xác thực trong một phút. Ghi
-status code thực tế; các request vượt hạn mức phải nhận `429`.
+Gửi nhiều request có xác thực trong một phút để kiểm tra rate limit; ghi lại
+status code thực tế. Các request vượt hạn mức phải nhận `429`.
 
 ## Kết quả chạy thật
 
-Chưa deploy; chưa có URL hoặc output kiểm tra thực tế. Sau deploy, lưu output
+Chưa deploy; chưa có URL hoặc output kiểm tra thực tế. Sau deployment, lưu output
 thật của `/health`, `/ready`, request thiếu key, request có key và rate limit ở đây.
 
 ## Ảnh minh chứng
 
-- `screenshots/dashboard.png` — trang service/deployment Railway.
-- `screenshots/health.png` — kết quả gọi `/health` sau deploy.
+- `screenshots/dashboard.png` — trang Blueprint/service/deployment Render.
+- `screenshots/health.png` — kết quả gọi `/health` sau deployment.
