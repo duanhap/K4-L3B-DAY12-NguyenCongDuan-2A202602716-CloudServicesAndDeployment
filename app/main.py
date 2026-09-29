@@ -16,7 +16,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from functools import lru_cache
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -57,13 +57,7 @@ def get_cost_guard() -> CostGuard:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """CHO SẴN — chạy lúc app khởi động và lúc tắt."""
-    # CP4 implements signal forwarding. Until then, don't let the placeholder
-    # prevent the service from starting during CP1/CP2 local checks.
-    try:
-        lifecycle.install()
-    except NotImplementedError:
-        # Remove this fallback once CP4 implements Lifecycle.install().
-        pass
+    lifecycle.install()
     log_event("service_started", service=SERVICE_NAME, version=SERVICE_VERSION)
     yield
     log_event("service_stopped", service=SERVICE_NAME)
@@ -113,7 +107,17 @@ def ready(store: ConversationStore = Depends(get_store)):
     Khác /health ở chỗ: endpoint này ĐƯỢC PHÉP kiểm tra dependency. Load
     balancer dùng nó để quyết định có đẩy request vào instance này không.
     """
-    raise NotImplementedError("TODO (CP4): cài đặt /ready")
+    if lifecycle.shutting_down:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "shutting_down"},
+        )
+    if not store.ping():
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not ready", "redis": False},
+        )
+    return {"status": "ready", "redis": True}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -156,6 +160,12 @@ def ask(
     ``user_id`` do ``verify_api_key`` trả về, nên request không có API key
     hợp lệ sẽ dừng ở 401 trước khi chạm vào bất cứ dòng nào ở đây.
     """
+    if lifecycle.shutting_down:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="service is shutting down",
+        )
+
     limiter.check(user_id)
     guard.check(user_id)
 
