@@ -7,7 +7,7 @@
 
 | Mục | Nội dung |
 |---|---|
-| Họ và tên | Nguyen Cong Duan (theo tên repository; xác nhận/cập nhật cách viết chính thức nếu cần) |
+| Họ và tên | Nguyễn Công Duẩn |
 | Mã học viên | 2A202602716 |
 | Repository | https://github.com/duanhap/K4-L3B-DAY12-NguyenCongDuan-2A202602716-CloudServicesAndDeployment |
 
@@ -15,22 +15,23 @@
 
 | Mục | Trạng thái |
 |---|---|
-| Public URL | Chưa deploy — lấy URL onrender.com sau khi Blueprint tạo web service |
-| Platform | Render Blueprint (đã chọn; deployment chưa xác minh) |
-| Ngày deploy | Chưa deploy |
+| Public URL | https://day12-agent-8put.onrender.com |
+| Platform | Render Blueprint |
+| Ngày deploy | 2026-09-29 |
 
 ## Biến môi trường
 
-Chỉ ghi tên biến và nguồn/trạng thái; không ghi giá trị secret.
+Ghi tên biến và nguồn giá trị, không ghi giá trị:
 
-| Biến | Trạng thái | Nguồn/ghi chú |
+
+| Biến | Đã set | Nguồn/ghi chú |
 |---|---|---|
-| `PORT` | Chờ deploy | Render cấp runtime port; ứng dụng đọc biến này |
-| `AGENT_API_KEY` | Chưa cấu hình/xác minh | Nhập trực tiếp vào Render khi Blueprint yêu cầu; không lưu trong Git |
-| `REDIS_URL` | Chờ tạo service | Blueprint tham chiếu connection string của Render Key Value `day12-redis` |
-| `RATE_LIMIT_PER_MINUTE` | Blueprint đặt mặc định | 10 |
-| `MONTHLY_BUDGET_USD` | Blueprint đặt mặc định | 10.0 |
-| `LOG_LEVEL` | Blueprint đặt mặc định | INFO |
+| `PORT` | ✅ | Render cấp runtime port; ứng dụng đọc biến này |
+| `AGENT_API_KEY` | ✅ | Nhập trong Render; không lưu trong Git |
+| `REDIS_URL` | ✅ | Render Key Value (Redis) |
+| `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
+| `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
+| `LOG_LEVEL` | ✅ | INFO |
 
 ## Các bước triển khai
 
@@ -75,8 +76,12 @@ status code thực tế. Các request vượt hạn mức phải nhận `429`.
 
 ## Kết quả chạy thật
 
-Chưa deploy; chưa có URL hoặc output kiểm tra thực tế. Sau deployment, lưu output
-thật của `/health`, `/ready`, request thiếu key, request có key và rate limit ở đây.
+Đã kiểm tra URL public ngày 2026-09-29:
+
+```text
+GET /health -> 200 {"status":"ok","service":"day12-agent","version":"1.0.0"}
+GET /ready  -> 200 {"status":"ready","redis":true}
+```
 
 ## Ảnh minh chứng
 
