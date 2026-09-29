@@ -17,7 +17,7 @@
 |---|---|
 | Public URL | https://day12-agent-8put.onrender.com |
 | Platform | Render Blueprint |
-| Ngày deploy | Chưa xác nhận trong dashboard; URL được kiểm tra ngày 2026-09-29 |
+| Ngày deploy | 2026-09-29 |
 
 ## Biến môi trường
 
